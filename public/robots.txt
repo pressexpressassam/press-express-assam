@@ -1,0 +1,26 @@
+# Robots.txt for Press Express Assam
+# Digital News Portal of Assam
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin
+
+# Specific search engine crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-News
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Sitemaps
+Sitemap: https://pressexpressassam.in/sitemap.xml
+Sitemap: https://pressexpressassam.in/news-sitemap.xml

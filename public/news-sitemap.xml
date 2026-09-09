@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url>
+    <loc>https://pressexpressassam.in/?article=art-001</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Press Express Assam</news:name>
+        <news:language>as</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-07T08:00:00+05:30</news:publication_date>
+      <news:title>ব্ৰহ্মপুত্ৰৰ বান সতৰ্কীকৰণ ব্যৱস্থা সম্পূৰ্ণ সক্ৰিয়: ১৪ টা নদী অৱবাহিকাত স্থাপিত হ'ল অত্যাধুনিক ৰাডাৰ নেটৱৰ্ক</news:title>
+      <news:keywords>Brahmaputra, Flood, Assam, Radar, Water Resources, NESAC</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://pressexpressassam.in/?article=art-002</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Press Express Assam</news:name>
+        <news:language>as</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-07T07:15:00+05:30</news:publication_date>
+      <news:title>অসম মন্ত্ৰীসভাৰ সেউজ হাইড্ৰজেন নীতি অনুমোদন: নামৰূপ আৰু ডিগবৈত হ'ব ২০০০ কোটি টকাৰ প্ৰকল্প</news:title>
+      <news:keywords>Assam Cabinet, Green Hydrogen, Namrup, Digboi, Economy</news:keywords>
+    </news:news>
+  </url>
+  <url>
+    <loc>https://pressexpressassam.in/?article=art-003</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Press Express Assam</news:name>
+        <news:language>as</news:language>
+      </news:publication>
+      <news:publication_date>2026-09-07T06:40:00+05:30</news:publication_date>
+      <news:title>কাজিৰঙাত বৃদ্ধি পালে এশিঙীয়া গঁড়ৰ সংখ্যা: শেহতীয়া গণনা অনুসৰি ২৬১৩ টা গঁড়ৰ উপস্থিতি নিশ্চিত</news:title>
+      <news:keywords>Kaziranga, Rhino, Wildlife, Forest Department, Assam Tourism</news:keywords>
+    </news:news>
+  </url>
+</urlset>

@@ -1,0 +1,3 @@
+# Google AdSense Authorized Digital Sellers (ads.txt)
+# Press Express Assam - pressexpressassam.in
+google.com, pub-7894210984123567, DIRECT, f08c47fec0942fa0

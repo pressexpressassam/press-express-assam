@@ -1,0 +1,6 @@
+{
+  "name": "Press Express Assam",
+  "description": "Real-time news portal for Assam with live video streaming, breaking alerts, offline reading mode, personalized feeds, cloud sync, MFA authentication, and privacy controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
