@@ -46,6 +46,121 @@
 
     <!-- Google AdSense Official Script -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7894210984123567" crossorigin="anonymous"></script>
+    <!-- Official Pi Network SDK (Version 2.0) -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+      (function() {
+        var isAuthenticating = false;
+        var isAuthenticated = false;
+
+        async function triggerPiAuth(source) {
+          if (isAuthenticated) {
+            console.log('[Pi Auth] Already authenticated Pioneer:', window.__PI_USER__?.username);
+            return;
+          }
+          if (!window.Pi) {
+            console.log('[Pi Auth] window.Pi not available yet (called from ' + source + ')');
+            return;
+          }
+          if (isAuthenticating) {
+            console.log('[Pi Auth] Authentication already in progress (called from ' + source + ')');
+            return;
+          }
+
+          isAuthenticating = true;
+          console.log('[Pi Auth] Starting Pi authentication flow (source: ' + source + ')');
+
+          try {
+            // Treat Pi.init(...) as a Promise; await it fully before calling Pi.authenticate(...)
+            try {
+              console.log('[Pi Auth] Awaiting window.Pi.init({ version: "2.0" }) as Promise...');
+              await window.Pi.init({ version: "2.0" });
+              console.log('[Pi Auth] Pi.init resolved successfully.');
+            } catch (initErr) {
+              console.warn('[Pi Auth] Pi.init notice:', initErr);
+              // Fallback attempt with sandbox if in testing environment
+              try {
+                await window.Pi.init({ version: "2.0", sandbox: true });
+              } catch (sandboxErr) {
+                console.warn('[Pi Auth] Pi.init sandbox fallback notice:', sandboxErr);
+              }
+            }
+
+            // Call Pi.authenticate with "username" scope
+            console.log('[Pi Auth] Invoking window.Pi.authenticate(["username"])...');
+            var scopes = ["username"];
+            function onIncompletePaymentFound(payment) {
+              console.log('[Pi Auth] Incomplete payment found:', payment);
+            }
+
+            var authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
+            if (authResult && authResult.accessToken) {
+              console.log('[Pi Auth] Authentication succeeded for Pioneer:', authResult.user?.username);
+              isAuthenticated = true;
+              window.__PI_AUTH_RESULT__ = authResult;
+              window.dispatchEvent(new CustomEvent('pi:authenticated', { detail: authResult }));
+
+              // Send the returned access token to the backend endpoint (/api/pi/verify)
+              // which validates via GET https://api.minepi.com/v2/me with Authorization: Bearer <accessToken>
+              fetch('/api/pi/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessToken: authResult.accessToken })
+              }).then(function(res) {
+                return res.json();
+              }).then(function(data) {
+                if (data.success && data.user) {
+                  console.log('[Pi Auth] Backend /v2/me verified Pi user:', data.user.username);
+                  window.__PI_USER__ = data.user;
+                  window.dispatchEvent(new CustomEvent('pi:verified', { detail: data }));
+                }
+              }).catch(function(err) {
+                console.warn('[Pi Auth] Backend verification error:', err);
+              });
+            }
+          } catch (authError) {
+            console.warn('[Pi Auth] Pi.authenticate note (will allow retry):', authError);
+          } finally {
+            isAuthenticating = false;
+          }
+        }
+
+        window.__triggerPiAuth = triggerPiAuth;
+
+        // Auto-trigger strategy: ensure App Studio's iframe listener catches the call
+        // regardless of whether the SDK loads immediately or takes several seconds
+        function scheduleTriggers() {
+          triggerPiAuth('immediate');
+          setTimeout(function() { triggerPiAuth('timer-1s'); }, 1000);
+          setTimeout(function() { triggerPiAuth('timer-2.5s'); }, 2500);
+          setTimeout(function() { triggerPiAuth('timer-5s'); }, 5000);
+        }
+
+        if (window.Pi) {
+          scheduleTriggers();
+        } else {
+          var checks = 0;
+          var pollTimer = setInterval(function() {
+            checks++;
+            if (window.Pi) {
+              clearInterval(pollTimer);
+              scheduleTriggers();
+            } else if (checks > 200) { // Poll up to 10 seconds
+              clearInterval(pollTimer);
+            }
+          }, 50);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            triggerPiAuth('DOMContentLoaded');
+          });
+        }
+        window.addEventListener('load', function() {
+          triggerPiAuth('window.load');
+        });
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">

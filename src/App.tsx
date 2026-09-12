@@ -45,6 +45,7 @@ import {
   DEFAULT_USER_PROFILE 
 } from './services/storageService';
 import { pushNotificationService } from './services/pushNotificationService';
+import { piAuthService } from './services/piAuthService';
 import { BreakingTicker } from './components/BreakingTicker';
 import { Navbar } from './components/Navbar';
 import { MenuBar } from './components/MenuBar';
@@ -296,6 +297,91 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // Requirement 3: Automatically trigger Pi authentication when the app loads
+  const [isPiAuthenticating, setIsPiAuthenticating] = useState(false);
+
+  // Manual trigger function for "Sign in with Pi" button
+  const handleManualPiSignIn = async () => {
+    setIsPiAuthenticating(true);
+    try {
+      if (typeof window !== 'undefined' && (window as any).__triggerPiAuth) {
+        (window as any).__triggerPiAuth('user-manual-button');
+      }
+      const result = await piAuthService.authenticate();
+      if (result.success && result.user) {
+        setUser((prev) => {
+          const updated: UserProfile = {
+            ...prev,
+            isLoggedIn: true,
+            oauthProvider: 'pi',
+            name: result.user!.username || 'Pi Pioneer',
+            email: `${(result.user!.username || 'pioneer').toLowerCase().replace(/\s+/g, '')}@pi.network`,
+            piUsername: result.user!.username,
+            piUid: result.user!.uid,
+            accessToken: result.accessToken,
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(result.user!.username || 'pi')}`,
+            lastSyncTimestamp: new Date().toISOString(),
+          };
+          storageService.saveUserProfile(updated);
+          return updated;
+        });
+
+        setLatestToast({
+          id: `notif-pi-${Date.now()}`,
+          title: '⚡ Pi Network Authenticated',
+          body: `Welcome, @${result.user.username}! Your identity is verified with Pi Network.`,
+          category: 'all',
+          timestamp: new Date().toISOString(),
+          read: false,
+          isBreaking: false,
+        });
+      } else {
+        setLatestToast({
+          id: `notif-pi-err-${Date.now()}`,
+          title: 'Pi Network Sign-in',
+          body: result.error || 'Please open this app inside the Pi Browser to authenticate.',
+          category: 'all',
+          timestamp: new Date().toISOString(),
+          read: false,
+          isBreaking: false,
+        });
+      }
+    } catch (err: any) {
+      console.error('Manual Pi login error:', err);
+    } finally {
+      setIsPiAuthenticating(false);
+    }
+  };
+
+  useEffect(() => {
+    const cleanup = piAuthService.autoTriggerAuthOnLoad(
+      (piProfile) => {
+        setUser((prev) => {
+          const updated: UserProfile = {
+            ...prev,
+            ...piProfile,
+          };
+          storageService.saveUserProfile(updated);
+          return updated;
+        });
+      },
+      (status) => {
+        if (status.type === 'success') {
+          setLatestToast({
+            id: `notif-pi-${Date.now()}`,
+            title: '⚡ Pi Network Connected',
+            body: status.message,
+            category: 'all',
+            timestamp: new Date().toISOString(),
+            read: false,
+            isBreaking: false,
+          });
+        }
+      }
+    );
+    return cleanup;
+  }, []);
+
   // Periodic automatic breaking news alert simulation to showcase push notifications
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -537,6 +623,32 @@ export default function App() {
         </div>
       )}
 
+      {/* Pi Network Sign-in Header Bar (Auto-triggered on load + manual button) */}
+      {user.oauthProvider !== 'pi' && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-purple-950/20 to-amber-500/10 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 py-1.5 px-3 sm:px-4 text-xs transition-all">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-amber-500 text-purple-950 font-serif font-black text-xs flex items-center justify-center shrink-0 shadow">
+                π
+              </span>
+              <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px] sm:text-xs">
+                Pi Network Integration: Authenticate with Pi Browser to access verified Pioneer reader credentials
+              </span>
+            </div>
+            <button
+              type="button"
+              id="top-banner-sign-in-with-pi"
+              onClick={handleManualPiSignIn}
+              disabled={isPiAuthenticating}
+              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-purple-950 font-bold rounded-lg shadow-sm text-xs flex items-center gap-1.5 transition-all shrink-0 cursor-pointer disabled:opacity-70"
+            >
+              <span className="font-black text-xs">π</span>
+              <span>{isPiAuthenticating ? 'Authenticating...' : 'Sign in with Pi'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Breaking Ticker Banner */}
       <BreakingTicker
         articles={articles}
@@ -566,6 +678,8 @@ export default function App() {
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         onOpenAdInquiry={() => setIsAdInquiryOpen(true)}
         onOpenGoogleSEO={() => setIsGoogleSEOSetupOpen(true)}
+        onSignInWithPi={handleManualPiSignIn}
+        isPiAuthenticating={isPiAuthenticating}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         isFullscreen={isFullscreen}

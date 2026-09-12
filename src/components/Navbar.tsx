@@ -53,6 +53,8 @@ interface NavbarProps {
   onNavigateHome?: () => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  onSignInWithPi?: () => void;
+  isPiAuthenticating?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -81,6 +83,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateHome,
   isFullscreen,
   onToggleFullscreen,
+  onSignInWithPi,
+  isPiAuthenticating = false,
 }) => {
   const [showSearchMobile, setShowSearchMobile] = useState(false);
   const [showQuickMenu, setShowQuickMenu] = useState(false);
@@ -312,22 +316,65 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
+            {/* Pi Network Sign-in Trigger / Pioneer Badge */}
+            {user.oauthProvider !== 'pi' ? (
+              <button
+                type="button"
+                id="navbar-sign-in-with-pi"
+                onClick={onSignInWithPi}
+                disabled={isPiAuthenticating}
+                title="Sign in with Pi Network account"
+                className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-purple-950 font-bold text-xs shadow-sm transition-all shrink-0 active:scale-95 disabled:opacity-75 cursor-pointer"
+              >
+                <span className="w-4 h-4 rounded-full bg-purple-950 text-amber-400 flex items-center justify-center font-serif font-black text-[10px] shrink-0">
+                  π
+                </span>
+                <span className="truncate">
+                  {isPiAuthenticating ? 'Authenticating...' : 'Sign in with Pi'}
+                </span>
+              </button>
+            ) : (
+              <div 
+                title={`Pi Network Authenticated: @${user.piUsername || 'Pioneer'}`}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-800 dark:text-amber-300 font-bold text-xs shrink-0"
+              >
+                <span className="w-4 h-4 rounded-full bg-amber-500 text-purple-950 flex items-center justify-center font-serif font-black text-[10px] shrink-0 shadow">
+                  π
+                </span>
+                <span className="truncate max-w-[85px] hidden sm:inline">@{user.piUsername || 'Pioneer'}</span>
+              </div>
+            )}
+
             {/* User Account / Role Badge */}
             <button
               onClick={onOpenAuth}
-              title={`${user.name} (${user.role}) - Click to manage account`}
+              title={`${user.name} (${user.role})${user.oauthProvider === 'pi' ? ' - Pi Network Authenticated' : ''} - Click to manage account`}
               className="flex items-center gap-1 sm:gap-2 p-1 sm:px-2.5 sm:py-1 rounded-lg border border-slate-300 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors shrink-0"
             >
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover ring-1 ring-red-600"
-              />
+              <div className="relative">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover ring-1 ring-red-600"
+                />
+                {user.oauthProvider === 'pi' && (
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-purple-950 font-serif font-black text-[9px] flex items-center justify-center shadow">
+                    π
+                  </span>
+                )}
+              </div>
               <div className="text-left hidden lg:block">
                 <p className="text-xs font-bold leading-none truncate max-w-[80px] text-slate-900 dark:text-slate-100">{user.name}</p>
-                <span className={`inline-block text-[8px] font-bold uppercase tracking-wider px-1 rounded border mt-0.5 ${getRoleBadgeColor(user.role)}`}>
-                  {user.role}
-                </span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className={`inline-block text-[8px] font-bold uppercase tracking-wider px-1 rounded border ${getRoleBadgeColor(user.role)}`}>
+                    {user.role}
+                  </span>
+                  {user.oauthProvider === 'pi' && (
+                    <span className="inline-block text-[8px] font-bold uppercase tracking-wider px-1 rounded border bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40">
+                      Pi
+                    </span>
+                  )}
+                </div>
               </div>
             </button>
           </div>

@@ -123,6 +123,17 @@ export interface UserPreferences {
   lowDataMode: boolean;
 }
 
+export interface PiUser {
+  uid: string;
+  username: string;
+  roles?: string[];
+}
+
+export interface PiAuthResult {
+  accessToken: string;
+  user: PiUser;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -132,7 +143,10 @@ export interface UserProfile {
   isLoggedIn: boolean;
   mfaEnabled: boolean;
   mfaMethod?: 'sms' | 'authenticator_totp';
-  oauthProvider?: 'google' | 'apple' | 'assam_egov' | 'email';
+  oauthProvider?: 'google' | 'apple' | 'assam_egov' | 'email' | 'pi';
+  piUsername?: string;
+  piUid?: string;
+  accessToken?: string;
   encryptedCredentialsKey?: string;
   lastSyncTimestamp: string;
   connectedDevices: {

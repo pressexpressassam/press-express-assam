@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { UserProfile, UserRole } from '../types';
+import { piAuthService } from '../services/piAuthService';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [mfaError, setMfaError] = useState('');
   const [mfaSuccessMessage, setMfaSuccessMessage] = useState('');
   const [targetRole, setTargetRole] = useState<UserRole>(user.role);
+  const [piLoading, setPiLoading] = useState(false);
+  const [piNotice, setPiNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   if (!isOpen) return null;
 
@@ -83,6 +86,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       isLoggedIn: true,
       lastSyncTimestamp: new Date().toISOString()
     });
+  };
+
+  const handlePiLogin = async () => {
+    setPiLoading(true);
+    setPiNotice(null);
+    try {
+      const result = await piAuthService.authenticate();
+      if (result.success && result.user) {
+        const username = result.user.username || 'Pi Pioneer';
+        const updated: UserProfile = {
+          ...user,
+          name: username,
+          email: `${username.toLowerCase().replace(/\s+/g, '')}@pi.network`,
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`,
+          oauthProvider: 'pi',
+          piUsername: username,
+          piUid: result.user.uid,
+          accessToken: result.accessToken,
+          isLoggedIn: true,
+          lastSyncTimestamp: new Date().toISOString(),
+        };
+        onUpdateUser(updated);
+        setPiNotice({
+          type: 'success',
+          text: `Successfully authenticated with Pi Network as @${username}! Verified via /v2/me`,
+        });
+      } else {
+        setPiNotice({
+          type: 'error',
+          text: result.error || 'Pi Network authentication could not be completed. Please ensure you are inside Pi Browser.',
+        });
+      }
+    } catch (err: any) {
+      setPiNotice({
+        type: 'error',
+        text: err?.message || 'Error occurred while authenticating with Pi Network',
+      });
+    } finally {
+      setPiLoading(false);
+    }
   };
 
   const roleDescriptions: Record<UserRole, { title: string; desc: string; badge: string }> = {
@@ -152,10 +195,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </span>
                     </div>
                     <p className="text-slate-500 text-xs mt-0.5">{user.email}</p>
-                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      OAuth 2.0 Authenticated • AES-256 Encrypted Session
-                    </p>
+                    {user.oauthProvider === 'pi' ? (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-1 flex items-center gap-1">
+                        <span className="w-3.5 h-3.5 rounded-full bg-amber-500 text-purple-950 font-serif font-black text-[9px] flex items-center justify-center">π</span>
+                        Pi Network Verified (@{user.piUsername || user.name}) • Web3 Session
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        OAuth 2.0 Authenticated • AES-256 Encrypted Session
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -243,25 +293,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </div>
 
-              {/* OAuth 2.0 Providers */}
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-                <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px] block mb-2">
-                  Connected Single Sign-On (OAuth 2.0)
-                </span>
-                <div className="grid grid-cols-3 gap-2">
+              {/* OAuth 2.0 & Web3 Providers */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Connected Single Sign-On (OAuth 2.0 & Web3)
+                  </span>
+                  {user.oauthProvider === 'pi' && (
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/30">
+                      <span className="w-3.5 h-3.5 rounded-full bg-amber-500 text-purple-950 font-serif font-black text-[9px] flex items-center justify-center">π</span>
+                      Pi Active: @{user.piUsername || 'Pioneer'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Pi Notice Message */}
+                {piNotice && (
+                  <div className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                    piNotice.type === 'success'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                      : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-500/30'
+                  }`}>
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1">{piNotice.text}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* Requirement 4: Visible "Sign in with Pi" button */}
                   <button
+                    type="button"
+                    id="btn-sign-in-with-pi"
+                    onClick={handlePiLogin}
+                    disabled={piLoading}
+                    className={`p-2 rounded-lg border text-center font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
+                      user.oauthProvider === 'pi'
+                        ? 'border-amber-500 bg-amber-500/20 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500'
+                        : 'border-amber-500/50 bg-gradient-to-r from-purple-950/10 to-amber-500/10 hover:from-purple-950/20 hover:to-amber-500/20 text-purple-900 dark:text-amber-300'
+                    }`}
+                  >
+                    <span className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-purple-950 flex items-center justify-center font-serif font-black text-xs shrink-0 shadow-sm">
+                      π
+                    </span>
+                    <span className="truncate">{piLoading ? 'Verifying...' : 'Sign in with Pi'}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => handleOAuthLogin('google')}
                     className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-center font-medium transition-colors"
                   >
                     Google OAuth
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleOAuthLogin('apple')}
                     className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-center font-medium transition-colors"
                   >
                     Apple ID
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleOAuthLogin('assam_egov')}
                     className="p-2 rounded-lg border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 text-center font-medium transition-colors"
                   >
